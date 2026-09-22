@@ -1,0 +1,12 @@
+[project]
+name = "interview-atlas-pipeline"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["httpx>=0.28,<1", "pydantic>=2.10,<3", "python-dotenv>=1,<2"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10"]
+
+[tool.pytest.ini_options]
+testpaths = ["pipeline/tests"]
+pythonpath = ["."]

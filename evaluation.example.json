@@ -1,0 +1,5 @@
+[
+  {"query": "怎样防止热门缓存失效压垮数据库", "relevant_sources": ["01-backend.md"]},
+  {"query": "浏览器页面滚动卡顿怎么优化", "relevant_sources": ["02-frontend.md"]},
+  {"query": "如何用队列消化突然增加的流量", "relevant_sources": ["03-systems.md"]}
+]

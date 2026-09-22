@@ -1,0 +1,16 @@
+node_modules/
+.pnpm-store/
+.next/
+.venv/
+__pycache__/
+.pytest_cache/
+.env*
+!.env.example
+data/cache/
+data/reports/
+data/raw/private/
+data/generated/
+playwright-report/
+test-results/
+*.tsbuildinfo
+config.local.json
