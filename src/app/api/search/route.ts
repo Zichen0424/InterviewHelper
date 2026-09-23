@@ -7,14 +7,15 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const text = await request.text();
-    if (text.length > 8000) return Response.json({ error: "请求内容过长", code: "INVALID_REQUEST" }, { status: 400 });
+    if (text.length > 128000) return Response.json({ error: "请求内容过长", code: "INVALID_REQUEST" }, { status: 400 });
     let json;
     try { json = JSON.parse(text); } catch { return Response.json({ error: "请求格式不正确", code: "INVALID_REQUEST" }, { status: 400 }); }
     const parsed = searchRequestSchema.safeParse(json);
     if (!parsed.success) return Response.json({ error: parsed.error.issues[0].message, code: "INVALID_REQUEST" }, { status: 400 });
     const { query, mode, filters, build_id } = parsed.data;
     const data = getSnapshot();
-    if (build_id && build_id !== data.build_id) throw new SearchError("资料已更新，请重新构建并重启网站后刷新页面。", "BUILD_MISMATCH", 409);
+    if (build_id && build_id !== data.build_id) throw new SearchError("资料已更新，请刷新页面后重试搜索。", "BUILD_MISMATCH", 409);
+    if (filters?.ids && filters.ids.length === 0) return Response.json({ mode, items: [], build_id: data.build_id });
     if (mode === "keyword") return Response.json({ mode, items: keywordSearch(data, query, filters), build_id: data.build_id });
     const config = readEmbeddingConfig();
     if (fingerprint(config) !== data.embedding_fingerprint) throw new SearchError("向量模型配置已变化，请重新生成资料索引。", "INDEX_MISMATCH", 409);

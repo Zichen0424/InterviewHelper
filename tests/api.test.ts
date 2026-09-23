@@ -41,3 +41,16 @@ it("does not expose vectors or raw full documents in search results", async () =
   expect(body.items[0]).not.toHaveProperty("raw");
   expect(body.items[0]).not.toHaveProperty("source");
 });
+it("applies the browser heart list to both search modes", async () => {
+  const id = data.interviews[0].id;
+  const keyword = await POST(request({ query: "Redis", mode: "keyword", filters: { ids: [id] } }));
+  expect(keyword.status).toBe(200);
+  expect((await keyword.json()).items.map((item: { id: string }) => item.id)).toEqual([id]);
+  const empty = await POST(request({ query: "Redis", mode: "keyword", filters: { ids: [] } }));
+  expect((await empty.json()).items).toEqual([]);
+  const semantic = await POST(request({ query: "消息", mode: "semantic", filters: { ids: [id] } }));
+  expect(semantic.status).toBe(200);
+  const semanticBody = await semantic.json();
+  expect(semanticBody.items).toHaveLength(1);
+  expect(semanticBody.items[0].id).toBe(id);
+});

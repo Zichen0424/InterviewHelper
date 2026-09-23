@@ -15,7 +15,6 @@ class Analysis(StrictModel):
     title: str = Field(min_length=1)
     company: str | None
     role: str | None
-    category: str
     interview_date: str | None
     summary: str = Field(min_length=1)
     tags: list[str]
@@ -40,7 +39,7 @@ class Chunk(StrictModel):
 
 
 class Snapshot(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[2] = 2
     build_id: str
     built_at: str
     demo: bool

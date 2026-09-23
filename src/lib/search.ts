@@ -1,9 +1,10 @@
 import { toCard, type Filters, type Interview, type SearchItem, type Snapshot } from "./schema";
 import { normalize, SearchError } from "./providers";
+import { hasTag } from "./library";
 
 export const normalized = (s: string) => s.normalize("NFKC").toLowerCase();
-export function matches(i: Pick<Interview, "company" | "category" | "tags">, filters: Filters = {}): boolean {
-  return (!filters.company || i.company === filters.company) && (!filters.category || i.category === filters.category) && (!filters.tag || i.tags.includes(filters.tag));
+export function matches(i: Pick<Interview, "id" | "company" | "tags">, filters: Filters = {}): boolean {
+  return (!filters.company || i.company === filters.company) && (!filters.tag || hasTag(i.tags, filters.tag)) && (!filters.ids || filters.ids.includes(i.id));
 }
 export function keywordSearch(data: Snapshot, query: string, filters: Filters = {}): SearchItem[] {
   const tokens = normalized(query).trim().split(/\s+/).filter(Boolean);

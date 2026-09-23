@@ -1,6 +1,5 @@
 {
   "llm": {"provider": "openai-compatible", "base_url": "https://YOUR-LLM-HOST/v1", "model": "YOUR-LLM-MODEL", "api_key_env": "LLM_API_KEY", "output_mode": "text"},
   "embedding": {"provider": "openai-compatible", "base_url": "https://YOUR-EMBEDDING-HOST/v1", "model": "YOUR-EMBEDDING-MODEL", "api_key_env": "EMBEDDING_API_KEY", "document_prefix": "", "query_prefix": ""},
-  "processing": {"chunk_size": 600, "chunk_overlap": 100},
-  "categories": ["后端", "前端", "客户端", "算法/数据", "测试", "运维/基础设施", "产品/运营", "其他"]
+  "processing": {"chunk_size": 600, "chunk_overlap": 100}
 }

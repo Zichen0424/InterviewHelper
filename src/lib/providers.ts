@@ -37,13 +37,21 @@ const concepts = [
   ["网络", "tcp", "http", "连接", "协议"], ["算法", "二叉树", "链表", "排序", "复杂度", "动态规划"],
   ["java", "jvm", "垃圾回收", "gc", "内存"], ["分布式", "一致性", "幂等", "重试", "微服务"],
   ["项目", "设计", "架构", "系统", "业务"], ["测试", "质量", "覆盖", "用例", "自动化"],
+  ["rag", "检索", "召回", "知识库", "embedding", "检索增强"],
+  ["agent", "智能体", "工具调用", "function calling", "工作流", "多智能体"],
+  ["mcp", "model context protocol", "工具协议", "资源协议"],
+  ["vllm", "推理服务", "模型部署", "量化", "gpu", "推理加速"],
+  ["pytorch", "微调", "训练", "lora", "qlora", "peft"],
+  ["langchain", "langgraph", "dify", "编排", "链式调用"],
+  ["milvus", "faiss", "pgvector", "向量数据库", "向量索引"],
+  ["评测", "幻觉", "准确率", "命中率", "recall", "precision", "基准测试"],
 ];
 export function mockVector(input: string): number[] {
   const text = input.normalize("NFKC").toLowerCase();
   const vector = Array<number>(96).fill(0);
   concepts.forEach((terms, i) => { vector[i] = 4 * terms.filter(t => text.includes(t)).length; });
   for (const token of text.match(/[a-z0-9+#]+|[\u4e00-\u9fff]{2}/g) || [text]) {
-    vector[12 + createHash("sha256").update(token).digest().readUInt32BE(0) % 84] += 0.2;
+    vector[20 + createHash("sha256").update(token).digest().readUInt32BE(0) % 76] += 0.2;
   }
   return normalize(vector);
 }

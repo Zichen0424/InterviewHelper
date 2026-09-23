@@ -1,8 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { snapshotSchema, searchRequestSchema } from "../src/lib/schema";
+import { snapshotSchema, searchRequestSchema, toCard } from "../src/lib/schema";
 import { CompatibleEmbedding, fingerprint, mockVector, normalize } from "../src/lib/providers";
 import { keywordSearch, semanticSearch } from "../src/lib/search";
+import { aiFirstStacks, hasTag, interviewTime, parseSort, popularStacks, sortInterviews } from "../src/lib/library";
+import { HEARTS_KEY, parseHearts, toggleHeart } from "../src/lib/hearts";
 
 const data = snapshotSchema.parse(JSON.parse(readFileSync("tests/fixtures/snapshot.json", "utf8")));
 const contract = JSON.parse(readFileSync("tests/fixtures/provider.json", "utf8"));
@@ -25,8 +27,15 @@ describe("retrieval", () => {
   it("requires all query terms and applies filters", () => {
     expect(keywordSearch(data, "Redis MySQL").length).toBeGreaterThan(0);
     expect(keywordSearch(data, "Redis 不存在的关键词")).toHaveLength(0);
-    expect(keywordSearch(data, "Redis", { category: "前端" })).toHaveLength(0);
+    expect(keywordSearch(data, "Redis", { tag: "React" })).toHaveLength(0);
     expect(keywordSearch(data, " ")).toHaveLength(0);
+  });
+  it("limits both retrieval modes to liked interview IDs when requested", () => {
+    const first = keywordSearch(data, "Redis")[0];
+    expect(first).toBeDefined();
+    expect(keywordSearch(data, "Redis", { ids: [first.id] }).map(i => i.id)).toEqual([first.id]);
+    expect(keywordSearch(data, "Redis", { ids: [] })).toHaveLength(0);
+    expect(semanticSearch(data, mockVector("消息队列如何削峰"), { ids: [] })).toHaveLength(0);
   });
   it("returns semantic matches aggregated by interview", () => {
     const results = semanticSearch(data, mockVector("消息队列如何削峰"));
@@ -46,6 +55,47 @@ describe("retrieval", () => {
     expect(keywordSearch(expanded, "Redis").length).toBeGreaterThan(0);
     expect(performance.now() - start).toBeLessThan(200);
   });
+});
+describe("library navigation", () => {
+  const cards = data.interviews.map(toCard);
+  it("orders popular stacks by document frequency and counts a tag once per interview", () => {
+    const stacks = popularStacks([{ tags: ["RAG", "rag", " Agent "] }, { tags: ["RAG", "Redis"] }, { tags: ["Agent"] }]);
+    expect(Object.fromEntries(stacks.map(s => [s.name, s.count]))).toEqual({ Agent: 2, RAG: 2, Redis: 1 });
+    expect(stacks.map(s => s.count)).toEqual([2, 2, 1]);
+    expect(hasTag(["ＲＡＧ"], "rag")).toBe(true);
+  });
+  it("features AI development stacks before generic tags while preserving counts", () => {
+    const byFrequency = popularStacks([
+      { tags: ["Redis", "RAG"] }, { tags: ["Redis", "Agent"] }, { tags: ["Redis"] },
+    ]);
+    expect(byFrequency[0]).toEqual({ name: "Redis", count: 3 });
+    expect(aiFirstStacks(byFrequency)).toEqual([
+      { name: "RAG", count: 1 }, { name: "Agent", count: 1 }, { name: "Redis", count: 3 },
+    ]);
+  });
+  it("supports time ascending, descending, and personal hearts first", () => {
+    const newest = sortInterviews(cards, "newest", new Set());
+    const oldest = sortInterviews(cards, "oldest", new Set());
+    expect(newest.every((card, i) => !i || interviewTime(newest[i - 1]) >= interviewTime(card))).toBe(true);
+    expect(oldest.every((card, i) => !i || interviewTime(oldest[i - 1]) <= interviewTime(card))).toBe(true);
+    const favorite = newest.at(-1)!;
+    expect(sortInterviews(cards, "popular", new Set([favorite.id]))[0].id).toBe(favorite.id);
+    expect(parseSort("unexpected")).toBe("newest");
+  });
+});
+it("stores at most one reversible heart per interview in the browser", () => {
+  const storage = new Map<string, string>();
+  const fakeWindow = new EventTarget() as EventTarget & { localStorage: Pick<Storage, "getItem" | "setItem"> };
+  fakeWindow.localStorage = {
+    getItem: key => storage.get(key) || null,
+    setItem: (key, value) => { storage.set(key, value); },
+  };
+  vi.stubGlobal("window", fakeWindow);
+  expect(parseHearts("not json").size).toBe(0);
+  expect(toggleHeart("one")).toBe(true);
+  expect(parseHearts(storage.get(HEARTS_KEY)!)).toEqual(new Set(["one"]));
+  expect(toggleHeart("one")).toBe(true);
+  expect(parseHearts(storage.get(HEARTS_KEY)!)).toEqual(new Set());
 });
 it("cloud adapter normalizes vectors and respects purpose and response order", async () => {
   vi.stubEnv("TEST_KEY", "test-only-secret");

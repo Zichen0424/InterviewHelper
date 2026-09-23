@@ -9,7 +9,7 @@ from pathlib import Path
 from .models import Analysis, Chunk, Interview, Snapshot
 from .providers import canonical, fingerprint, providers, normalize
 
-PROMPT_VERSION = "1"
+PROMPT_VERSION = "2-tech-stacks"
 
 
 def digest(text: str) -> str:
@@ -58,8 +58,6 @@ def load_config(root: Path) -> dict:
         raise ValueError("演示 Embedding 固定使用 96 维")
     if config["llm"].get("output_mode", "text") not in ("text", "json_object", "json_schema"):
         raise ValueError("LLM output_mode 无效")
-    if not config.get("categories") or "其他" not in config["categories"]:
-        raise ValueError("分类配置必须包含其他")
     return config
 
 
@@ -71,15 +69,15 @@ def process_file(root: Path, path: Path, config: dict, llm, embedding, force=Fal
         raise ValueError("原文为空")
     content_hash = digest(raw)
     interview_id = digest(source)[:16]
-    analysis_key = digest(canonical({"content": content_hash, "llm": config["llm"], "prompt": PROMPT_VERSION, "categories": config["categories"]}))
+    analysis_key = digest(canonical({"content": content_hash, "llm": config["llm"], "prompt": PROMPT_VERSION}))
     cache = root / "data" / "cache"
     analysis_path = cache / "analysis" / f"{analysis_key}.json"
     if analysis_path.exists() and not force:
         analysis = Analysis.model_validate_json(analysis_path.read_text(encoding="utf-8"))
     else:
-        analysis = llm.analyze(raw, config["categories"])
-        if analysis.category not in config["categories"] or any(q.evidence not in raw for q in analysis.questions):
-            raise ValueError("分类或原文证据校验失败")
+        analysis = llm.analyze(raw)
+        if any(q.evidence not in raw for q in analysis.questions):
+            raise ValueError("原文证据校验失败")
         atomic_json(analysis_path, analysis.model_dump())
     interview = Interview(**analysis.model_dump(), id=interview_id, source=source, content_hash=content_hash, raw=raw, updated_at=datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat())
     chunks = []
@@ -142,5 +140,12 @@ def build(root: Path, force=False, single: str | None = None) -> dict:
         )
         atomic_json(root / "data" / "generated" / "snapshot.json", snapshot.model_dump())
         report["published"] = True
-    atomic_json(root / "data" / "reports" / "latest.json", report)
+    try:
+        atomic_json(root / "data" / "reports" / "latest.json", report)
+    except OSError:
+        if not report["published"]:
+            raise
+        # The snapshot is already visible. A diagnostic report must not make
+        # callers treat the published build as failed and roll back its source.
+        report["report_warning"] = "快照已发布，但最近一次构建报告未能写入"
     return report
