@@ -4,25 +4,27 @@
 
 支持总结、技术标签、面试题及原文证据、关键词搜索、语义搜索、公司和技术栈筛选、命中原文定位，以及爱心清单和排序。默认附带**虚构示例**，使用不联网的演示 Provider；演示向量只用于验证流程，不能代表真实语义效果。
 
-## 启动
+## Quick Start（uv）
 
-环境：Python 3.12+（本机已验证 3.13.5）、Node.js 22+、pnpm。所有命令在项目根目录执行。
-
-Windows PowerShell：
+需要 Python 3.12+、Node.js 22+、pnpm 和 uv。尚未安装 uv 可参照 [官方安装指南](https://docs.astral.sh/uv/getting-started/installation/)。在项目根目录运行：
 
 ```powershell
-# 尚未创建环境时，使用已有 Python；路径按实际安装位置调整。
-& "$env:LOCALAPPDATA\Programs\Python\Python313\python.exe" -m venv .venv
-& .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+uv sync --locked
 pnpm install
 pnpm data:build
-pnpm build
-pnpm start
+pnpm dev
 ```
 
-打开 http://127.0.0.1:3000 。开发时使用 `pnpm dev`。服务默认只绑定本机地址。
+打开 http://127.0.0.1:3000 。`uv sync --locked` 会按 `uv.lock` 创建 `.venv`，数据构建脚本会自动使用它。默认是无需密钥的演示模式。需要生产构建时，停止开发服务后运行 `pnpm build`、`pnpm start`。服务默认只绑定本机地址。
 
-已安装 uv 时，可以用 `uv sync --locked` 管理 Python 环境与依赖，后续仍可使用 `pnpm data:build`。Linux/macOS 也可使用 `python3 -m venv .venv` 与 `.venv/bin/python -m pip install -r requirements.txt`。
+不用 uv 时，可先用已有 Python 创建环境并安装依赖，再从上面的 `pnpm install` 继续。Windows PowerShell 示例（Python 路径按实际安装位置调整）：
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\Python\Python313\python.exe" -m venv .venv
+& .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+Linux/macOS 可使用 `python3 -m venv .venv` 与 `.venv/bin/python -m pip install -r requirements.txt`。
 
 ## 接入真实模型
 

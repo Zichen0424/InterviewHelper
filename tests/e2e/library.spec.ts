@@ -23,6 +23,13 @@ test("AI development stacks are easy to discover and filter", async ({ page, isM
   } else {
     await expect(page.getByRole("button", { name: "筛选技术栈 RAG" })).toBeVisible();
     await expect(page.getByRole("button", { name: "筛选技术栈 Agent" })).toBeVisible();
+    await page.getByRole("button", { name: /查看全部.*个技术标签/ }).click();
+    expect(await page.locator(".stack-count").allTextContents()).toContain("2");
+    const barsFit = await page.locator(".stack-meter").evaluateAll(tracks => tracks.every(track => {
+      const fill = track.querySelector("i");
+      return fill !== null && fill.getBoundingClientRect().width <= track.getBoundingClientRect().width + 1;
+    }));
+    expect(barsFit).toBe(true);
     await page.getByRole("button", { name: "筛选技术栈 RAG" }).click();
   }
   await expect(page).toHaveURL(/tag=RAG/);

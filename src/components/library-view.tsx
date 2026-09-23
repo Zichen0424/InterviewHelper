@@ -73,6 +73,7 @@ export function LibraryView({ cards, buildId, demo, embeddingDemo }: {
   const current = visible.slice((activePage - 1) * 12, activePage * 12);
   const questionCount = cards.reduce((total, card) => total + card.question_count, 0);
   const shownStacks = expandedStacks ? stacks : stacks.slice(0, 8);
+  const maxStackCount = stacks.reduce((max, stack) => Math.max(max, stack.count), 1);
 
   return <div className="library-page reveal">
     <section className="library-hero">
@@ -152,7 +153,7 @@ export function LibraryView({ cards, buildId, demo, embeddingDemo }: {
           <p className="stack-description">优先展示 AI 开发技术，数字为收录篇数</p>
           <button className={`stack-row all-stacks ${!tag ? "selected" : ""}`} onClick={() => update({ tag: "" })}><span>全部技术栈</span><span>{cards.length}{!tag && <Check size={12}/>}</span></button>
           {shownStacks.map((stack, index) => <button key={stack.name} className={`stack-row ${tag === stack.name ? "selected" : ""}`} aria-label={`筛选技术栈 ${stack.name}`} aria-pressed={tag === stack.name} onClick={() => update({ tag: tag === stack.name ? "" : stack.name })}>
-            <span className="stack-rank">{String(index + 1).padStart(2, "0")}</span><span className="stack-name">{stack.name}<span className="stack-meter"><i style={{ width: `${stack.count / (stacks[0]?.count || 1) * 100}%` }}/></span></span><span className="stack-count">{stack.count}</span>
+            <span className="stack-rank">{String(index + 1).padStart(2, "0")}</span><span className="stack-name">{stack.name}<span className="stack-meter"><i style={{ width: `${stack.count / maxStackCount * 100}%` }}/></span></span><span className="stack-count">{stack.count}</span>
           </button>)}
           {stacks.length > 8 && <button className="expand-stacks" onClick={() => setExpandedStacks(v => !v)}>{expandedStacks ? "收起技术栈" : `查看全部 ${stacks.length} 个技术标签`}<ChevronDown size={13} className={expandedStacks ? "rotate-180" : ""}/></button>}
         </section>

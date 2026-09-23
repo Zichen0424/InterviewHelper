@@ -126,7 +126,7 @@ input:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid 
 .stack-rank { font-size: 9px; font-variant-numeric: tabular-nums; color: #9ba889; }
 .stack-name { flex: 1; min-width: 0; font-size: 12px; }
 .stack-count { font-size: 10px; color: #97a680; }
-.stack-meter { height: 2px; display: block; width: 75%; background: #e2e8d7; margin-top: 7px; border-radius: 2px; }
+.stack-meter { height: 2px; display: block; width: 75%; background: #e2e8d7; margin-top: 7px; border-radius: 2px; overflow: hidden; }
 .stack-meter i { display: block; height: 100%; background: #a5b980; border-radius: 2px; }
 .expand-stacks { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 10px; width: 100%; border-top: 1px solid #dae2cc; padding: 15px 0 8px; margin-top: 10px; color: #85966d; }
 .reading-note { margin-top: 20px; padding: 22px 8px; border-top: 1px solid #dfe5d3; color: #889972; }
