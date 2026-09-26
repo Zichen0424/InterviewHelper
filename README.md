@@ -4,6 +4,8 @@
 
 支持总结、技术标签、面试题及原文证据、关键词搜索、语义搜索、公司和技术栈筛选、命中原文定位，以及爱心清单和排序。默认附带**虚构示例**，使用不联网的演示 Provider；演示向量只用于验证流程，不能代表真实语义效果。
 
+下一阶段的优化优先级、验收标准、技术选型和私有服务器上线步骤见 [下一阶段需求与上线计划](docs/next-phase-requirements.md)。该文档描述待实施需求，当前功能以本 README 为准。
+
 ## Quick Start（uv）
 
 需要 Python 3.12+、Node.js 22+、pnpm 和 uv。尚未安装 uv 可参照 [官方安装指南](https://docs.astral.sh/uv/getting-started/installation/)。在项目根目录运行：
