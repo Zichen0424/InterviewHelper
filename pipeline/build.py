@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .paths import data_directory
 from .models import Analysis, Chunk, Interview, Snapshot
 from .providers import canonical, fingerprint, providers, normalize
 
@@ -62,7 +63,7 @@ def load_config(root: Path) -> dict:
 
 
 def process_file(root: Path, path: Path, config: dict, llm, embedding, force=False):
-    raw_root = root / "data" / "raw"
+    raw_root = data_directory(root) / "raw"
     source = path.relative_to(raw_root).as_posix()
     raw = path.read_text(encoding="utf-8-sig")
     if not raw.strip():
@@ -70,7 +71,7 @@ def process_file(root: Path, path: Path, config: dict, llm, embedding, force=Fal
     content_hash = digest(raw)
     interview_id = digest(source)[:16]
     analysis_key = digest(canonical({"content": content_hash, "llm": config["llm"], "prompt": PROMPT_VERSION}))
-    cache = root / "data" / "cache"
+    cache = data_directory(root) / "cache"
     analysis_path = cache / "analysis" / f"{analysis_key}.json"
     if analysis_path.exists() and not force:
         analysis = Analysis.model_validate_json(analysis_path.read_text(encoding="utf-8"))
@@ -106,12 +107,12 @@ def process_file(root: Path, path: Path, config: dict, llm, embedding, force=Fal
 def build(root: Path, force=False, single: str | None = None) -> dict:
     config = load_config(root)
     llm, embedding = providers(config)
-    raw_root = root / "data" / "raw"
+    raw_root = data_directory(root) / "raw"
     paths = sorted(p for p in raw_root.rglob("*") if p.is_file() and p.suffix.lower() in (".txt", ".md"))
     if single:
         target = (raw_root / single).resolve()
         if not target.is_relative_to(raw_root.resolve()) or target not in [p.resolve() for p in paths]:
-            raise ValueError("单篇文件必须位于 data/raw 内，且为 .md 或 .txt")
+            raise ValueError("单篇文件必须位于 DATA_DIR/raw 内，且为 .md 或 .txt")
         paths = [target]
     interviews, chunks, failures, duplicates = [], [], [], []
     hashes = {}
@@ -138,10 +139,10 @@ def build(root: Path, force=False, single: str | None = None) -> dict:
             llm_provider=config["llm"]["provider"], embedding_provider=config["embedding"]["provider"],
             embedding_fingerprint=fingerprint(config["embedding"]), dimensions=dimensions, interviews=interviews, chunks=chunks,
         )
-        atomic_json(root / "data" / "generated" / "snapshot.json", snapshot.model_dump())
+        atomic_json(data_directory(root) / "generated" / "snapshot.json", snapshot.model_dump())
         report["published"] = True
     try:
-        atomic_json(root / "data" / "reports" / "latest.json", report)
+        atomic_json(data_directory(root) / "reports" / "latest.json", report)
     except OSError:
         if not report["published"]:
             raise

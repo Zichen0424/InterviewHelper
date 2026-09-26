@@ -11,7 +11,7 @@ from .build import build
 def main():
     parser = argparse.ArgumentParser(description="面经离线整理与索引构建")
     parser.add_argument("command", choices=["build", "retry", "analyze"])
-    parser.add_argument("file", nargs="?", help="analyze 使用 data/raw 下的相对路径；只更新缓存")
+    parser.add_argument("file", nargs="?", help="analyze 使用 DATA_DIR/raw 下的相对路径；只更新缓存")
     parser.add_argument("--force", action="store_true", help="强制重新调用模型")
     args = parser.parse_args()
     if args.command == "analyze" and not args.file:

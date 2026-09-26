@@ -10,6 +10,8 @@ data/cache/
 data/reports/
 data/raw/private/
 data/generated/
+data/auth/
+.runtime/
 playwright-report/
 test-results/
 *.tsbuildinfo

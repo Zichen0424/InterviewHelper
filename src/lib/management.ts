@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { lstat, mkdir, open, realpath, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { snapshotSchema, type Interview, type Snapshot } from "./schema";
+import { dataPath } from "./paths";
 
 const privateSource = /^private\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\.md$/;
 
@@ -17,42 +18,12 @@ export function isPrivateInterview(interview: Interview): boolean {
   return privateSource.test(interview.source) && createHash("sha256").update(interview.source).digest("hex").slice(0, 16) === interview.id;
 }
 
-export function checkLocalWrite(request: Request): void {
-  const target = new URL(request.url);
-  const host = request.headers.get("host") || target.host;
-  if (!isLoopbackHost(target.host) || !isLoopbackHost(host)) {
-    throw new ManagementError("资料管理只允许在本机使用。", "LOCAL_ONLY", 403);
-  }
-  const origin = request.headers.get("origin");
-  let sameOrigin = false;
-  try {
-    const submitted = new URL(origin || "");
-    sameOrigin = submitted.protocol === target.protocol && submitted.host.toLowerCase() === host.toLowerCase();
-  } catch { /* Missing or malformed Origin. */ }
-  if (!sameOrigin) {
-    throw new ManagementError("请从本站页面操作资料。", "LOCAL_ONLY", 403);
-  }
-  const fetchSite = request.headers.get("sec-fetch-site");
-  if (fetchSite && fetchSite !== "same-origin" && fetchSite !== "none") {
-    throw new ManagementError("请从本站页面操作资料。", "LOCAL_ONLY", 403);
-  }
-}
-
-export function isLoopbackHost(host: string | null): boolean {
-  if (!host) return false;
-  try {
-    const parsed = new URL(`http://${host}`);
-    return !parsed.username && !parsed.password && ["127.0.0.1", "localhost", "[::1]"].includes(parsed.hostname.toLowerCase());
-  }
-  catch { return false; }
-}
-
 export function freshSnapshot(): Snapshot {
-  return snapshotSchema.parse(JSON.parse(readFileSync(path.join(process.cwd(), "data", "generated", "snapshot.json"), "utf8")));
+  return snapshotSchema.parse(JSON.parse(readFileSync(dataPath("generated", "snapshot.json"), "utf8")));
 }
 
 async function privateDirectory(): Promise<string> {
-  const rawRoot = path.join(process.cwd(), "data", "raw");
+  const rawRoot = dataPath("raw");
   const directory = path.join(rawRoot, "private");
   await mkdir(directory, { recursive: true });
   if (!(await lstat(directory)).isDirectory()) throw new ManagementError("私人资料目录无效。", "STORAGE_FAILED", 500);
@@ -66,14 +37,14 @@ async function privateDirectory(): Promise<string> {
 }
 
 async function withBuildLock<T>(work: () => Promise<T>): Promise<T> {
-  const lock = path.join(process.cwd(), "data", "generated", ".management.lock");
+  const lock = dataPath("generated", ".management.lock");
   await mkdir(path.dirname(lock), { recursive: true });
   let handle;
   try {
     handle = await open(lock, "wx");
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "EEXIST") {
-      throw new ManagementError("正在整理另一篇面经，请稍后重试。若处理进程已退出，请检查 data/generated/.management.lock。", "BUILD_BUSY", 409);
+      throw new ManagementError("正在整理另一篇面经，请稍后重试。若处理进程已退出，请检查 DATA_DIR/generated/.management.lock。", "BUILD_BUSY", 409);
     }
     throw error;
   }
@@ -127,7 +98,7 @@ function canonical(value: unknown): string {
 }
 
 async function removeTargetCache(record: Interview, before: Snapshot, after: Snapshot): Promise<void> {
-  const cacheRoot = path.join(process.cwd(), "data", "cache");
+  const cacheRoot = dataPath("cache");
   const removeKnownFile = async (directoryName: string, name: string) => {
     const directory = path.join(cacheRoot, directoryName);
     try {
@@ -196,7 +167,7 @@ export async function deleteInterview(id: string): Promise<{ id: string; build_i
     const directory = await privateDirectory();
     const original = path.join(directory, `${match[1]}.md`);
     if (!(await lstat(original)).isFile()) throw new ManagementError("原文文件无效，未执行删除。", "STORAGE_FAILED", 500);
-    const quarantine = path.join(process.cwd(), "data", "generated", "quarantine");
+    const quarantine = dataPath("generated", "quarantine");
     await mkdir(quarantine, { recursive: true });
     const parked = path.join(quarantine, `${id}-${randomUUID()}.pending`);
     await rename(original, parked);

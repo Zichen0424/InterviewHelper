@@ -13,11 +13,37 @@ ROOT = Path(__file__).resolve().parents[2]
 @pytest.fixture
 def workspace(tmp_path, monkeypatch):
     monkeypatch.delenv("INTERVIEW_CONFIG", raising=False)
+    monkeypatch.delenv("DATA_DIR", raising=False)
     (tmp_path / "config.json").write_text((ROOT / "config.json").read_text(encoding="utf-8"), encoding="utf-8")
     raw = tmp_path / "data/raw"
     raw.mkdir(parents=True)
     (raw / "a.md").write_text("# Redis 面试\n公司：样例公司\n- 缓存穿透如何处理？\n", encoding="utf-8")
     return tmp_path
+
+
+@pytest.mark.parametrize("relative", [True, False])
+def test_data_dir_isolates_all_outputs(workspace, monkeypatch, relative):
+    directory = workspace / "runtime-data"
+    raw = directory / "raw"
+    raw.mkdir(parents=True)
+    (raw / "custom.md").write_text("# Custom RAG\n- 如何评估召回？", encoding="utf-8")
+    monkeypatch.setenv("DATA_DIR", "runtime-data" if relative else str(directory))
+    assert build(workspace)["published"]
+    snapshot = Snapshot.model_validate_json((directory / "generated/snapshot.json").read_text(encoding="utf-8"))
+    assert [item.source for item in snapshot.interviews] == ["custom.md"]
+    assert (directory / "reports/latest.json").exists()
+    assert list((directory / "cache/analysis").glob("*.json"))
+    assert list((directory / "cache/vectors").glob("*.json"))
+    assert not (workspace / "data/generated").exists()
+    assert build(workspace, single="custom.md")["processed"] == 1
+
+
+def test_empty_data_dir_can_be_initialized(workspace, monkeypatch):
+    directory = workspace / "empty-data"
+    monkeypatch.setenv("DATA_DIR", str(directory))
+    assert build(workspace)["published"]
+    snapshot = Snapshot.model_validate_json((directory / "generated/snapshot.json").read_text(encoding="utf-8"))
+    assert snapshot.interviews == []
 
 
 def test_incremental_build_and_deletion(workspace, monkeypatch):

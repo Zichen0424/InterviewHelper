@@ -6,7 +6,13 @@ import { test, expect } from "@playwright/test";
 const origin = "http://127.0.0.1:3000";
 const privateName = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.md$/;
 
-test("paste, publish, search, and delete a private interview", async ({ page, request, isMobile }) => {
+test.beforeEach(async ({ page }) => {
+  const response = await page.request.post("/api/auth/login", { headers: { Origin: origin }, data: { username: "e2e-owner", password: process.env.E2E_ADMIN_PASSWORD } });
+  expect(response.status()).toBe(200);
+});
+
+test("paste, publish, search, and delete a private interview", async ({ page, isMobile }) => {
+  const request = page.request;
   test.skip(isMobile, "Run the state-changing pipeline once; the mobile management layout has a separate check.");
   test.setTimeout(120_000);
   const config = JSON.parse(await readFile(path.join(process.cwd(), "config.json"), "utf8"));
@@ -53,7 +59,7 @@ test("paste, publish, search, and delete a private interview", async ({ page, re
       try { deleted = (await request.delete(`/api/interviews/${id}`, { headers: { Origin: origin }, timeout: 20_000 })).ok(); } catch { /* Fall back to exact-content cleanup. */ }
     }
     if (!deleted) {
-      const directory = path.join(process.cwd(), "data", "raw", "private");
+      const directory = path.join(process.env.E2E_DATA_DIR!, "raw", "private");
       const names = await readdir(directory).catch(() => []);
       let removed = false;
       for (const name of names) {

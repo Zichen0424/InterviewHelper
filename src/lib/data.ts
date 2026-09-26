@@ -1,13 +1,13 @@
 import { readFileSync, statSync } from "node:fs";
-import path from "node:path";
+import { dataPath } from "./paths";
 import { snapshotSchema, type Snapshot } from "./schema";
 
 let cached: { stamp: string; data: Snapshot } | undefined;
 export function getSnapshot(): Snapshot {
-  const file = path.join(process.cwd(), "data/generated/snapshot.json");
+  const file = dataPath("generated", "snapshot.json");
   let stat;
   try { stat = statSync(file); } catch { throw new Error("尚未生成资料，请先运行 python -m pipeline build"); }
-  const stamp = `${stat.mtimeMs}:${stat.size}`;
+  const stamp = `${file}:${stat.mtimeMs}:${stat.size}`;
   if (cached?.stamp === stamp) return cached.data;
   const data = snapshotSchema.parse(JSON.parse(readFileSync(file, "utf8")));
   const ids = new Set(data.interviews.map(i => i.id));

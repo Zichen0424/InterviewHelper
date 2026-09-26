@@ -1,0 +1,20 @@
+# Allowlist: local credentials, data and host dependencies never enter the context.
+**
+!Dockerfile
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!next.config.ts
+!next-env.d.ts
+!tsconfig.json
+!postcss.config.mjs
+!pyproject.toml
+!uv.lock
+!config.json
+!src/
+!src/**
+!pipeline/
+!pipeline/*.py
+!scripts/
+!scripts/docker-init.mjs
+!scripts/docker-entrypoint.sh

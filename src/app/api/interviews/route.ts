@@ -1,4 +1,5 @@
-import { addInterview, checkLocalWrite, ManagementError, rebuildInterviews } from "@/lib/management";
+import { addInterview, ManagementError, rebuildInterviews } from "@/lib/management";
+import { AuthError, authFailure, requireAdminWrite } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,7 @@ async function readLimitedBody(request: Request): Promise<string> {
 }
 
 function failure(error: unknown): Response {
+  if (error instanceof AuthError) return authFailure(error);
   if (error instanceof ManagementError) {
     return Response.json({ error: error.message, code: error.code, saved: error.saved, source: error.source }, { status: error.status });
   }
@@ -31,7 +33,7 @@ function failure(error: unknown): Response {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    checkLocalWrite(request);
+    await requireAdminWrite(request);
     if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
       throw new ManagementError("请以 JSON 格式提交原文。", "INVALID_REQUEST", 415);
     }
@@ -50,7 +52,7 @@ export async function POST(request: Request): Promise<Response> {
 
 export async function PATCH(request: Request): Promise<Response> {
   try {
-    checkLocalWrite(request);
+    await requireAdminWrite(request);
     return Response.json(await rebuildInterviews());
   } catch (error) { return failure(error); }
 }
