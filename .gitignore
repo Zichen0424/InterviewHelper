@@ -8,7 +8,9 @@ __pycache__/
 !.env.example
 data/cache/
 data/reports/
-data/raw/private/
+# 原始面经可能包含真实个人信息；新录入或手动导入的文件默认不提交。
+# 已跟踪的虚构示例仍由 Git 管理，不要把真实内容写入这些示例文件。
+data/raw/
 data/generated/
 data/auth/
 .runtime/
